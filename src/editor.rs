@@ -40,6 +40,9 @@ impl<'a> Editor<'a> {
             } else {
                 x = lines[y as usize].len() as i32 + x;
             }
+            if x < 0 {
+                x = 0;
+            }
         }
         let x = x as usize;
         let y = y as usize;
@@ -50,10 +53,12 @@ impl<'a> Editor<'a> {
         //self.window.addstr(&format!("{}", self.index));
     }
     fn delch(&mut self) {
-        self.window.delch();
         let x = self.window.get_cur_x();
         let y = self.window.get_cur_y();
-        self.buffer.remove(self.index);
+        let removed = self.buffer.remove(self.index);
+        if removed.is_whitespace() {
+            self.window.delch();
+        }
         self.window.mv(0, 0);
         self.window.addstr(&self.buffer);
         self.window.mv(y, x);
