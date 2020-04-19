@@ -29,21 +29,42 @@ impl<'a> Editor<'a> {
     fn mv(&mut self, x: i32, y: i32) {
         use std::cmp::min;
         let mut lines: Vec<&str> = self.buffer.lines().collect();
-        let y = min(y as usize + self.starting_line, lines.len() - 1);
-        let x = min(x as usize, lines[y].len());
-        let rest = lines.split_off(y).into_iter().fold(0, |acc, next| acc + next.len());
+        let mut y = min(y + self.starting_line as i32, lines.len() as i32 - 1);
+        if y < 0 { y = 0 }
+        let mut x = min(x + self.starting_line as i32, lines[y as usize].len() as i32);
+        if x < 0 {
+            y -= 1;
+            if y < 0 {
+                y = 0;
+                x = 0;
+            } else {
+                x = lines[y as usize].len() as i32 + x;
+            }
+        }
+        let x = x as usize;
+        let y = y as usize;
+        let _ = lines.split_off(y);
+        let rest = lines.into_iter().fold(0, |acc, next| acc + next.len() + 1);
         self.index = rest + x;
         self.window.mv((y - self.starting_line) as i32, (x - self.starting_column) as i32);
+        //self.window.addstr(&format!("{}", self.index));
     }
     fn delch(&mut self) {
         self.window.delch();
+        let x = self.window.get_cur_x();
+        let y = self.window.get_cur_y();
         self.buffer.remove(self.index);
+        self.window.mv(0, 0);
+        self.window.addstr(&self.buffer);
+        self.window.mv(y, x);
     }
     fn addch(&mut self, c: char) {
         self.window.insch(c);
         let x = self.window.get_cur_x();
         let y = self.window.get_cur_y();
         self.buffer.insert(self.index, c);
+        self.window.mv(0, 0);
+        self.window.addstr(&self.buffer);
         self.mv(x + 1, y);
     }
     pub fn run(&mut self) {
