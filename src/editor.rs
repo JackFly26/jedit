@@ -63,17 +63,13 @@ impl<'a> Editor<'a> {
     fn delch(&mut self) {
         let x = self.window.get_cur_x();
         let y = self.window.get_cur_y();
-        let removed = self.buffer.remove(self.index);
-        if removed.is_whitespace() {
-            self.window.delch();
-        }
+        let _ = self.buffer.remove(self.index);
         self.window.mv(0, 0);
         self.window.clear();
         self.window.addstr(&self.buffer);
         self.window.mv(y, x);
     }
     fn addch(&mut self, c: char) {
-        self.window.insch(c);
         let x = self.window.get_cur_x();
         let y = self.window.get_cur_y();
         self.buffer.insert(self.index, c);
