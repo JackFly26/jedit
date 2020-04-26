@@ -31,14 +31,23 @@ impl<'a> Editor<'a> {
         let mut lines: Vec<&str> = self.buffer.lines().collect();
         let mut y = min(y + self.starting_line as i32, lines.len() as i32 - 1);
         if y < 0 { y = 0 }
-        let mut x = min(x + self.starting_line as i32, lines[y as usize].len() as i32);
-        if x < 0 {
-            y -= 1;
+        let mut x = x + self.starting_line as i32;
+        if x < 0  || x > lines[y as usize].len() as i32 {
+            let mut y_added = false;
+            if x < 0 { y -= 1 } else {
+                y += 1;
+                y_added = true;
+            }
             if y < 0 {
                 y = 0;
                 x = 0;
+            } else if y > lines.len() as i32 {
+                y = lines.len() as i32;
+                x = lines[y as usize].len() as i32;
+            } else if y_added {
+                x -= lines[y as usize - 1].len() as i32 + 1;
             } else {
-                x = lines[y as usize].len() as i32 + x;
+                x = lines[y as usize].len() as i32 + x + 1;
             }
             if x < 0 {
                 x = 0;
@@ -50,7 +59,6 @@ impl<'a> Editor<'a> {
         let rest = lines.into_iter().fold(0, |acc, next| acc + next.len() + 1);
         self.index = rest + x;
         self.window.mv((y - self.starting_line) as i32, (x - self.starting_column) as i32);
-        //self.window.addstr(&format!("{}", self.index));
     }
     fn delch(&mut self) {
         let x = self.window.get_cur_x();
@@ -60,6 +68,7 @@ impl<'a> Editor<'a> {
             self.window.delch();
         }
         self.window.mv(0, 0);
+        self.window.clear();
         self.window.addstr(&self.buffer);
         self.window.mv(y, x);
     }
@@ -69,12 +78,25 @@ impl<'a> Editor<'a> {
         let y = self.window.get_cur_y();
         self.buffer.insert(self.index, c);
         self.window.mv(0, 0);
+        self.window.clear();
         self.window.addstr(&self.buffer);
         self.mv(x + 1, y);
     }
     pub fn run(&mut self) {
         loop {
             match self.window.getch() {
+                Some(inp) if [Input::KeyUp, Input::KeyDown, Input::KeyLeft, Input::KeyRight].contains(&inp) => {
+                    let mut x = self.window.get_cur_x();
+                    let mut y = self.window.get_cur_y();
+                    match inp {
+                        Input::KeyUp => y -= 1,
+                        Input::KeyDown => y += 1,
+                        Input::KeyLeft => x -= 1,
+                        Input::KeyRight => x += 1,
+                        _ => panic!("match statements are broken")
+                    }
+                    self.mv(x, y);
+                }
                 Some(Input::KeyBackspace) => {
                     let x = self.window.get_cur_x();
                     let y = self.window.get_cur_y();
@@ -83,7 +105,9 @@ impl<'a> Editor<'a> {
                 }
                 Some(Input::KeyMouse) => {
                     if let Ok(mouse_event) = getmouse() {
-                        self.mv(mouse_event.x, mouse_event.y);
+                        let lines: Vec<&str> = self.buffer.lines().collect();
+                        let x = std::cmp::min(mouse_event.x, lines.get(mouse_event.y as usize).unwrap_or(&lines[lines.len() - 1]).len() as i32);
+                        self.mv(x, mouse_event.y);
                     }
                 }
                 Some(Input::Character(c)) if c == 'q' => {
