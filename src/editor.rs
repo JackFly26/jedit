@@ -106,8 +106,12 @@ impl<'a> Editor<'a> {
                         self.mv(x, mouse_event.y);
                     }
                 }
-                Some(Input::Character(c)) if c == 'q' => {
-                    break;
+                Some(Input::Character(c)) if c == '\x1b' => {
+                    if let Some(inp) = self.window.getch() {
+
+                    } else {
+                        break;
+                    }
                 }
                 Some(Input::Character(c)) => {
                     self.addch(c);

@@ -16,6 +16,7 @@ fn main() -> std::io::Result<()>{
     window.keypad(true);
     mousemask(ALL_MOUSE_EVENTS, std::ptr::null_mut());
     noecho();
+    window.nodelay(true);
     let mut editor = Editor::new(&window, &mut file)?;
     editor.run();
     endwin();
