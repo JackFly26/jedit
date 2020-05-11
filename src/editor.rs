@@ -31,26 +31,27 @@ impl<'a> Editor<'a> {
         let mut lines: Vec<&str> = self.buffer.lines().collect();
         let mut y = min(y + self.starting_line as i32, lines.len() as i32 - 1);
         if y < 0 { y = 0 }
-        let mut x = x + self.starting_line as i32;
-        if x < 0  || x > lines[y as usize].len() as i32 {
-            let mut y_added = false;
-            if x < 0 { y -= 1 } else {
-                y += 1;
-                y_added = true;
-            }
-            if y < 0 {
-                y = 0;
-                x = 0;
-            } else if y > lines.len() as i32 {
-                y = lines.len() as i32;
-                x = lines[y as usize].len() as i32;
-            } else if y_added {
-                x -= lines[y as usize - 1].len() as i32 + 1;
+        let mut x = x + self.starting_column as i32;
+        if x < 0 {
+            if y > 0 {
+                y -= 1;    
+                x += lines[y as usize].len() as i32 + 1;
+                if x < 0 {
+                    x = 0;
+                }    
             } else {
-                x = lines[y as usize].len() as i32 + x + 1;
-            }
-            if x < 0 {
                 x = 0;
+            }
+        } else if x > lines[y as usize].len() as i32 {
+            if y < lines.len() as i32 - 1 {
+                y += 1;
+                x -= lines[y as usize - 1].len() as i32 + 1;
+                self.window.addstr(format!("({}, {})", x, y));
+                if x < 0 || x > lines[y as usize].len() as i32 {
+                    x = 0;
+                }
+            } else {
+                x = lines[y as usize].len() as i32;
             }
         }
         let x = x as usize;
